@@ -1,0 +1,84 @@
+name: Sync Ghost Posts
+
+on:
+  # 定期実行（毎日午前3時 JST = UTC 18:00）
+  schedule:
+    - cron: '0 18 * * *'
+  
+  # 手動実行を許可
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run mode (true/false)'
+        required: false
+        default: 'false'
+      include-drafts:
+        description: 'Include draft posts (true/false)'
+        required: false
+        default: 'false'
+      include-pages:
+        description: 'Include pages (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # 全履歴を取得（同期結果のコミットで履歴を維持するため）
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Run sync (Dry Run)
+        if: github.event.inputs.dry-run == 'true'
+        env:
+          GHOST_API_URL: ${{ secrets.GHOST_API_URL }}
+          GHOST_ADMIN_API_KEY: ${{ secrets.GHOST_ADMIN_API_KEY }}
+          CONTENT_PATH: ./posts
+          INCLUDE_DRAFTS: ${{ github.event.inputs.include-drafts }}
+          INCLUDE_PAGES: ${{ github.event.inputs.include-pages }}
+        run: node dist/sync.js --dry-run
+      
+      - name: Run sync
+        if: github.event.inputs.dry-run != 'true'
+        env:
+          GHOST_API_URL: ${{ secrets.GHOST_API_URL }}
+          GHOST_ADMIN_API_KEY: ${{ secrets.GHOST_ADMIN_API_KEY }}
+          CONTENT_PATH: ./posts
+          INCLUDE_DRAFTS: ${{ github.event.inputs.include-drafts || 'false' }}
+          INCLUDE_PAGES: ${{ github.event.inputs.include-pages || 'false' }}
+        run: node dist/sync.js
+      
+      - name: Check for changes
+        if: github.event.inputs.dry-run != 'true'
+        id: check-changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: github.event.inputs.dry-run != 'true' && steps.check-changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add posts/
+          git commit -m "Sync Ghost posts [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]"
+          git push
