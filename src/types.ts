@@ -7,7 +7,7 @@ export interface GhostPost {
   uuid: string;
   title: string;
   slug: string;
-  html: string;
+  html?: string;
   mobiledoc?: string;
   feature_image?: string;
   featured: boolean;

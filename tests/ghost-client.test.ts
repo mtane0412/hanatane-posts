@@ -61,6 +61,7 @@ describe('GhostClient', () => {
       expect(mockApi.posts.browse).toHaveBeenCalledWith({
         limit: 'all',
         include: 'authors,tags',
+        formats: 'html',
         filter: 'status:published',
       });
     });
@@ -78,6 +79,7 @@ describe('GhostClient', () => {
       expect(mockApi.posts.browse).toHaveBeenCalledWith({
         limit: 'all',
         include: 'authors,tags',
+        formats: 'html',
         filter: undefined,
       });
     });

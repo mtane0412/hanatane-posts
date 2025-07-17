@@ -29,7 +29,11 @@ export class MarkdownConverter {
     // 例: ボタンカード、製品カードなど
   }
 
-  convertToMarkdown(html: string): string {
+  convertToMarkdown(html: string | undefined): string {
+    if (!html) {
+      console.warn('HTML content is undefined or empty');
+      return '';
+    }
     return this.turndownService.turndown(html);
   }
 
@@ -94,6 +98,9 @@ export class MarkdownConverter {
 
       // frontmatterとコンテンツの生成
       const frontmatter = this.createFrontmatter(post);
+      if (!post.html) {
+        throw new Error(`Post ${post.slug} has no HTML content`);
+      }
       const markdownContent = this.convertToMarkdown(post.html);
 
       // ファイルの内容を生成

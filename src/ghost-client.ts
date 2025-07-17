@@ -32,6 +32,7 @@ export class GhostClient {
       const browseOptions: Record<string, unknown> = {
         limit: 'all',
         include: 'authors,tags',
+        formats: 'html',
       };
 
       if (!options.includeDrafts) {
@@ -51,6 +52,7 @@ export class GhostClient {
       const browseOptions: Record<string, unknown> = {
         limit: 'all',
         include: 'authors,tags',
+        formats: 'html',
       };
 
       if (!options.includeDrafts) {

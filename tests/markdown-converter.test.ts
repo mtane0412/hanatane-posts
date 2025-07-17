@@ -77,6 +77,14 @@ describe('MarkdownConverter', () => {
       const markdown = converter.convertToMarkdown(html);
       expect(markdown).toBe('Paragraph 1\n\nParagraph 2');
     });
+
+    it('undefinedのHTMLを処理できる', () => {
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const markdown = converter.convertToMarkdown(undefined as any);
+      expect(markdown).toBe('');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('HTML content is undefined or empty');
+      consoleWarnSpy.mockRestore();
+    });
   });
 
   describe('createFrontmatter', () => {
@@ -236,6 +244,22 @@ Content 2`);
       await expect(converter.deletePost('test.md')).rejects.toThrow(
         'Failed to delete post test.md: Delete error'
       );
+    });
+  });
+
+  describe('savePost with undefined html', () => {
+    it('htmlがundefinedの場合にエラーを投げる', async () => {
+      const postWithoutHtml: GhostPost = {
+        ...mockPost,
+        html: undefined,
+      };
+
+      await expect(converter.savePost(postWithoutHtml)).rejects.toThrow(
+        'Post test-post has no HTML content'
+      );
+
+      expect(fs.mkdir).toHaveBeenCalledWith(mockContentPath, { recursive: true });
+      expect(fs.writeFile).not.toHaveBeenCalled();
     });
   });
 });
